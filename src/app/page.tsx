@@ -1,0 +1,246 @@
+'use client';
+
+import { formatDate, formatCurrency } from '@/lib/utils';
+import { Calendar, Users, TrendingUp, DollarSign, Clock } from 'lucide-react';
+import Link from 'next/link';
+import type { Lesson } from '@/lib/types';
+import { EntityType, LessonStatus } from '@/lib/types';
+import { useStatistics } from '@/hooks/useStatistics';
+
+export default function HomePage() {
+    const { stats, upcomingLessons, isLoading } = useStatistics();
+
+    if (!stats || isLoading) {
+        return (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px' }}>
+                <div className="spinner" style={{ width: '40px', height: '40px' }}></div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="container" style={{ maxWidth: '1400px' }}>
+            <div className="slide-up">
+                {/* Header */}
+                <div style={{ marginBottom: '32px' }}>
+                    <h1 style={{ fontSize: '32px', fontWeight: '700', marginBottom: '8px' }}>
+                        Добро пожаловать! 👋
+                    </h1>
+                    <p style={{ fontSize: '16px', color: 'var(--text-muted)' }}>
+                        Вот краткий обзор вашего менторства
+                    </p>
+                </div>
+
+                {/* KPI Cards */}
+                <div className="grid grid-4" style={{ marginBottom: '32px' }}>
+                    <StatCard
+                        icon={<DollarSign size={24} />}
+                        label="Всего заработано"
+                        value={formatCurrency(stats.totalEarnings)}
+                        color="var(--success)"
+                    />
+                    <StatCard
+                        icon={<TrendingUp size={24} />}
+                        label="Получено"
+                        value={formatCurrency(stats.totalReceived)}
+                        color="var(--info)"
+                    />
+                    <StatCard
+                        icon={<Clock size={24} />}
+                        label="Ожидается"
+                        value={formatCurrency(stats.totalPending)}
+                        color="var(--warning)"
+                    />
+                    <StatCard
+                        icon={<Users size={24} />}
+                        label="Активные ученики"
+                        value={`${stats.activeStudents + stats.activeGroups}`}
+                        color="var(--secondary)"
+                    />
+                </div>
+
+                {/* Quick Stats */}
+                <div className="grid grid-3" style={{ marginBottom: '32px' }}>
+                    <QuickStatCard
+                        label="Уроков на этой неделе"
+                        value={stats.lessonsThisWeek}
+                        icon={<Calendar size={20} />}
+                    />
+                    <QuickStatCard
+                        label="Уроков в этом месяце"
+                        value={stats.lessonsThisMonth}
+                        icon={<Calendar size={20} />}
+                    />
+                    <QuickStatCard
+                        label="Ожидается на неделе"
+                        value={`${formatCurrency(stats.weeklyExpected)}`}
+                        icon={<DollarSign size={20} />}
+                    />
+                </div>
+
+                {/* Upcoming Lessons */}
+                <div className="card">
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: '24px'
+                    }}>
+                        <h2 style={{ fontSize: '20px', fontWeight: '600' }}>
+                            Ближайшие уроки
+                        </h2>
+                        <Link href="/calendar" className="btn btn-secondary" style={{ fontSize: '14px', padding: '8px 16px' }}>
+                            Открыть календарь
+                        </Link>
+                    </div>
+
+                    {upcomingLessons.length === 0 ? (
+                        <div style={{
+                            textAlign: 'center',
+                            padding: '40px',
+                            color: 'var(--text-muted)'
+                        }}>
+                            <Calendar size={48} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
+                            <p>Нет запланированных уроков</p>
+                            <Link href="/calendar" className="btn btn-primary" style={{ marginTop: '16px' }}>
+                                Добавить урок
+                            </Link>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {upcomingLessons.map(lesson => (
+                                <LessonCard key={lesson.id} lesson={lesson} />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function StatCard({ icon, label, value, color }: {
+    icon: React.ReactNode;
+    label: string;
+    value: string | number;
+    color: string;
+}) {
+    return (
+        <div className="card" style={{
+            background: `linear-gradient(135deg, var(--bg-card) 0%, ${color}10 100%)`,
+            borderColor: `${color}30`,
+        }}>
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px'
+            }}>
+                <div style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: 'var(--radius-sm)',
+                    background: `${color}20`,
+                    color: color,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}>
+                    {icon}
+                </div>
+                <div>
+                    <p style={{
+                        fontSize: '12px',
+                        color: 'var(--text-muted)',
+                        marginBottom: '4px'
+                    }}>
+                        {label}
+                    </p>
+                    <p style={{
+                        fontSize: '24px',
+                        fontWeight: '700',
+                        color: 'var(--text-primary)'
+                    }}>
+                        {value}
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function QuickStatCard({ label, value, icon }: {
+    label: string;
+    value: string | number;
+    icon: React.ReactNode;
+}) {
+    return (
+        <div className="card" style={{ padding: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ color: 'var(--primary)' }}>
+                    {icon}
+                </div>
+                <div>
+                    <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                        {label}
+                    </p>
+                    <p style={{ fontSize: '18px', fontWeight: '600' }}>
+                        {value}
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function LessonCard({ lesson }: { lesson: Lesson }) {
+    const startTime = new Date(lesson.startTime);
+
+    return (
+        <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '16px',
+            background: 'var(--bg-tertiary)',
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--border)',
+        }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'var(--primary)',
+                    color: 'white',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '12px',
+                }}>
+                    <div style={{ fontWeight: '700', fontSize: '16px' }}>
+                        {startTime.getDate()}
+                    </div>
+                    <div>
+                        {formatDate(startTime, 'MMM')}
+                    </div>
+                </div>
+                <div>
+                    <p style={{ fontWeight: '600', marginBottom: '4px' }}>
+                        {lesson.type === EntityType.Student ? 'Индивидуальный урок' : 'Групповой урок'}
+                    </p>
+                    <p style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
+                        {formatDate(startTime, 'HH:mm')} • {lesson.duration} {lesson.duration === 1 ? 'час' : 'часа'}
+                    </p>
+                </div>
+            </div>
+            <div className={`badge ${lesson.status === LessonStatus.Completed ? 'badge-success' : lesson.status === LessonStatus.Cancelled ? 'badge-error' : 'badge-info'}`}>
+                {lesson.status === LessonStatus.Completed
+                    ? 'Завершен'
+                    : lesson.status === LessonStatus.Cancelled
+                        ? 'Отменен'
+                        : 'Запланирован'}
+            </div>
+        </div>
+    );
+}
