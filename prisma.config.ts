@@ -13,8 +13,14 @@ if (result.error && process.env.NODE_ENV === "development") {
 }
 
 // Get DATABASE_URL from environment
-// Note: Prisma Postgres creates DATABBASE_URL (with double B) automatically
-const databaseUrl = process.env.DATABBASE_URL || process.env.DATABASE_URL || process.env["DATABBASE_URL"] || process.env["DATABASE_URL"];
+// Note: Prisma Postgres creates DATABBASE_POSTGRES_URL automatically
+const databaseUrl = 
+  process.env.DATABBASE_URL || 
+  process.env.DATABBASE_POSTGRES_URL ||
+  process.env.DATABASE_URL || 
+  process.env["DATABBASE_URL"] || 
+  process.env["DATABBASE_POSTGRES_URL"] || 
+  process.env["DATABASE_URL"];
 
 if (!databaseUrl) {
   console.error("Available env vars:", Object.keys(process.env).filter(k => k.includes("DATABASE")));
