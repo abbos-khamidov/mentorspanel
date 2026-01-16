@@ -3,6 +3,8 @@ import { formatCurrency } from '@/lib/utils';
 import { TrendingUp, DollarSign, Calendar, Users } from 'lucide-react';
 import AnalyticsCharts from './AnalyticsCharts';
 
+export const dynamic = 'force-dynamic';
+
 export default async function AnalyticsPage() {
   const [monthlyStats, studentPayments, lessonStats] = await Promise.all([
     getMonthlyStats(),

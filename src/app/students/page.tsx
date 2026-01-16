@@ -6,6 +6,8 @@ import StudentsClient from './StudentsClient';
 import StudentActions from './StudentActions';
 import MarkLessonButton from './MarkLessonButton';
 
+export const dynamic = 'force-dynamic';
+
 async function getStudentsWithPlans() {
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
 

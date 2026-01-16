@@ -4,6 +4,8 @@ import { Calendar, Users, TrendingUp, DollarSign, Clock, CheckCircle2, AlertCirc
 import Link from 'next/link';
 import { LessonStatus } from '@/lib/types';
 
+export const dynamic = 'force-dynamic';
+
 // Get upcoming lessons (next 7 days)
 async function getUpcomingLessons() {
   const now = new Date();
