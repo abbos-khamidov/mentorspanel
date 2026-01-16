@@ -4,10 +4,12 @@ import { useEffect, useState, useCallback } from 'react';
 import { Calendar as BigCalendar, dateFnsLocalizer, View } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { lessonsDB, studentsDB, groupsDB } from '@/lib/db';
+// Removed old db imports - will be replaced with API calls
 import { Calendar as CalendarIcon, Plus, X, Trash2 } from 'lucide-react';
 import type { Lesson } from '@/lib/types';
-import { EntityType, LessonStatus } from '@/lib/types';
+// Note: EntityType and LessonStatus might need updates for new model
+const EntityType = { Student: 'student', Group: 'group' } as const;
+const LessonStatus = { Scheduled: 'pending', Completed: 'done', Cancelled: 'cancelled' } as const;
 import { doLessonsOverlap, getLessonEndTime } from '@/lib/utils';
 
 const locales = {
@@ -43,18 +45,39 @@ interface CalendarEvent {
     title: string;
     start: Date;
     end: Date;
-    resource: Lesson;
+            resource: LessonFromAPI;
+}
+
+interface LessonFromAPI {
+    id: string;
+    type: 'student' | 'group';
+    studentId?: string;
+    studentName?: string;
+    startTime: string;
+    duration: 1 | 2;
+    status: string;
+    notes?: string | null;
+    createdAt: string;
 }
 
 export default function CalendarPage() {
-    const [lessons, setLessons] = useState<Lesson[]>([]);
+    const [lessons, setLessons] = useState<LessonFromAPI[]>([]);
     const [view, setView] = useState<View>('month');
     const [showModal, setShowModal] = useState(false);
-    const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+    const [selectedLesson, setSelectedLesson] = useState<LessonFromAPI | null>(null);
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
-    const loadLessons = useCallback(() => {
-        setLessons(lessonsDB.getAll());
+    const loadLessons = useCallback(async () => {
+        try {
+            const response = await fetch('/api/lessons');
+            if (response.ok) {
+                const data = await response.json();
+                setLessons(data);
+            }
+        } catch (error) {
+            console.error('Failed to load lessons:', error);
+            setLessons([]);
+        }
     }, []);
 
     useEffect(() => {
@@ -63,16 +86,13 @@ export default function CalendarPage() {
 
     const events: CalendarEvent[] = lessons.map(lesson => {
         const start = new Date(lesson.startTime);
-        const end = getLessonEndTime(lesson.startTime, lesson.duration);
+        const endHours = lesson.duration || 1;
+        const end = new Date(start.getTime() + endHours * 60 * 60 * 1000);
 
-        let title = '';
-        if (lesson.type === EntityType.Student && lesson.studentId) {
-            const student = studentsDB.getById(lesson.studentId);
-            title = student ? `${student.name} (Индивид.)` : 'Индивидуальный урок';
-        } else if (lesson.type === EntityType.Group && lesson.groupId) {
-            const group = groupsDB.getById(lesson.groupId);
-            title = group ? `${group.name} (Группа)` : 'Групповой урок';
-        }
+        // Get student name from lesson data
+        const title = lesson.studentName 
+            ? `${lesson.studentName} (Индивид.)` 
+            : 'Урок';
 
         return {
             id: lesson.id,
@@ -98,13 +118,13 @@ export default function CalendarPage() {
         const lesson = event.resource;
         let backgroundColor = 'var(--primary)';
 
-        if (lesson.type === EntityType.Group) {
+        if (lesson.type === 'group') {
             backgroundColor = 'var(--secondary)';
         }
 
-        if (lesson.status === LessonStatus.Completed) {
+        if (lesson.status === 'done' || lesson.status === 'completed') {
             backgroundColor = 'var(--success)';
-        } else if (lesson.status === LessonStatus.Cancelled) {
+        } else if (lesson.status === 'cancelled') {
             backgroundColor = 'var(--error)';
         }
 
@@ -223,90 +243,89 @@ function LessonModal({
     onClose,
     onSave
 }: {
-    lesson: Lesson | null;
+    lesson: LessonFromAPI | null;
     initialDate: Date | null;
     onClose: () => void;
     onSave: () => void;
 }) {
-    const students = studentsDB.getAll().filter(s => s.isActive);
-    const groups = groupsDB.getAll().filter(g => g.isActive);
+    const [students, setStudents] = useState<any[]>([]);
+    const [groups] = useState<any[]>([]); // Groups not used in new model
+    
+    useEffect(() => {
+        // Fetch students from API
+        fetch('/api/students')
+            .then(res => res.json())
+            .then(data => setStudents(data))
+            .catch(err => console.error('Failed to load students:', err));
+    }, []);
 
     const defaultDate = lesson
         ? new Date(lesson.startTime)
         : initialDate || new Date();
 
     const [formData, setFormData] = useState({
-        type: lesson?.type || EntityType.Student,
+        type: lesson?.type || 'student',
         studentId: lesson?.studentId || '',
-        groupId: lesson?.groupId || '',
+        groupId: '',
         date: format(defaultDate, 'yyyy-MM-dd'),
         time: format(defaultDate, 'HH:mm'),
         duration: lesson?.duration || 1 as 1 | 2,
-        status: lesson?.status || LessonStatus.Scheduled,
+        status: lesson?.status || 'pending',
         notes: lesson?.notes || '',
     });
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const startTime = new Date(`${formData.date}T${formData.time}`).toISOString();
+        const startTimeDate = new Date(`${formData.date}T${formData.time}`);
+        const endTimeDate = new Date(startTimeDate.getTime() + formData.duration * 60 * 60 * 1000);
 
-        // проверка пересечений для выбранного ученика/группы
-        const allLessons = lessonsDB.getAll();
-        const related = allLessons.filter(existing => {
-            if (lesson && existing.id === lesson.id) {
-                return false;
-            }
-            if (formData.type === EntityType.Student) {
-                return (
-                    existing.type === EntityType.Student &&
-                    existing.studentId === formData.studentId
-                );
-            }
-            return (
-                existing.type === EntityType.Group &&
-                existing.groupId === formData.groupId
-            );
-        });
-
-        const hasOverlap = related.some(existing =>
-            doLessonsOverlap(
-                existing.startTime,
-                existing.duration,
-                startTime,
-                formData.duration,
-            ),
-        );
-
-        if (hasOverlap) {
-            // eslint-disable-next-line no-alert
-            alert('Невозможно сохранить: урок пересекается с другим уроком для этого ученика/группы.');
-            return;
-        }
-
-        const lessonData: Omit<Lesson, 'id' | 'createdAt'> = {
-            type: formData.type,
-            studentId: formData.type === EntityType.Student ? formData.studentId : undefined,
-            groupId: formData.type === EntityType.Group ? formData.groupId : undefined,
-            startTime,
-            duration: formData.duration,
-            status: formData.status,
-            notes: formData.notes,
+        const lessonData = {
+            studentId: formData.studentId,
+            startTime: startTimeDate.toISOString(),
+            endTime: endTimeDate.toISOString(),
+            notes: formData.notes || undefined,
         };
 
-        if (lesson) {
-            lessonsDB.update(lesson.id, lessonData);
-        } else {
-            lessonsDB.create(lessonData);
-        }
+        const url = lesson ? `/api/lessons/${lesson.id}` : '/api/lessons';
+        const method = lesson ? 'PUT' : 'POST';
 
-        onSave();
+        try {
+            const response = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(lessonData),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                alert(error.error || 'Ошибка при сохранении урока');
+                return;
+            }
+
+            onSave();
+        } catch (error) {
+            console.error('Failed to save lesson:', error);
+            alert('Ошибка при сохранении урока');
+        }
     };
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
         if (lesson && confirm('Вы уверены, что хотите удалить этот урок?')) {
-            lessonsDB.delete(lesson.id);
-            onSave();
+            try {
+                const response = await fetch(`/api/lessons/${lesson.id}`, {
+                    method: 'DELETE',
+                });
+
+                if (response.ok) {
+                    onSave();
+                } else {
+                    alert('Ошибка при удалении урока');
+                }
+            } catch (error) {
+                console.error('Failed to delete lesson:', error);
+                alert('Ошибка при удалении урока');
+            }
         }
     };
 
@@ -332,7 +351,7 @@ function LessonModal({
                                 onChange={(e) =>
                                     setFormData({
                                         ...formData,
-                                        type: e.target.value as EntityType,
+                                        type: e.target.value as typeof EntityType[keyof typeof EntityType],
                                         studentId: '',
                                         groupId: '',
                                     })
@@ -344,7 +363,7 @@ function LessonModal({
                             </select>
                         </div>
 
-                        {formData.type === EntityType.Student ? (
+                        {formData.type === 'student' ? (
                             <div className="form-group">
                                 <label className="form-label">Ученик *</label>
                                 <select
@@ -425,14 +444,14 @@ function LessonModal({
                                 onChange={(e) =>
                                     setFormData({
                                         ...formData,
-                                        status: e.target.value as LessonStatus,
+                                        status: e.target.value as typeof LessonStatus[keyof typeof LessonStatus],
                                     })
                                 }
                                 required
                             >
-                                <option value={LessonStatus.Scheduled}>Запланирован</option>
-                                <option value={LessonStatus.Completed}>Завершен</option>
-                                <option value={LessonStatus.Cancelled}>Отменен</option>
+                                <option value="pending">Запланирован</option>
+                                <option value="done">Завершен</option>
+                                <option value="cancelled">Отменен</option>
                             </select>
                         </div>
 

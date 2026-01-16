@@ -10,17 +10,15 @@ import {
     TrendingUp,
     GraduationCap
 } from 'lucide-react';
-
-const navItems = [
-    { href: '/', label: 'Главная', icon: LayoutDashboard },
-    { href: '/calendar', label: 'Календарь', icon: Calendar },
-    { href: '/students', label: 'Ученики', icon: Users },
-    { href: '/payments', label: 'Оплаты', icon: Wallet },
-    { href: '/analytics', label: 'Аналитика', icon: TrendingUp },
-];
+import { useLocale } from '@/hooks/useLocale';
+import { getTranslation } from '@/lib/i18n';
+import ThemeToggle from './ThemeToggle';
+import LocaleToggle from './LocaleToggle';
 
 export default function Navigation() {
     const pathname = usePathname();
+    const { locale } = useLocale();
+    const t = getTranslation(locale);
 
     return (
         <nav style={{
@@ -29,47 +27,59 @@ export default function Navigation() {
             top: 0,
             bottom: 0,
             width: '260px',
-            background: 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)',
+            background: 'var(--bg-secondary)',
             borderRight: '1px solid var(--border)',
             padding: '24px 16px',
             display: 'flex',
             flexDirection: 'column',
             gap: '24px',
         }}>
-            {/* Logo */}
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '12px',
-            }}>
+            {/* Logo & Controls */}
+            <div>
                 <div style={{
-                    width: '40px',
-                    height: '40px',
-                    background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
-                    borderRadius: '12px',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
+                    gap: '12px',
+                    padding: '12px',
+                    marginBottom: '16px',
                 }}>
-                    <GraduationCap size={24} color="white" />
+                    <div style={{
+                        width: '40px',
+                        height: '40px',
+                        background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
+                        borderRadius: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}>
+                        <GraduationCap size={24} color="white" />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <h1 style={{
+                            fontSize: '18px',
+                            fontWeight: '700',
+                            color: 'var(--text-primary)',
+                        }}>
+                            Менторство
+                        </h1>
+                        <p style={{
+                            fontSize: '12px',
+                            color: 'var(--text-muted)',
+                        }}>
+                            {t.nav.panel}
+                        </p>
+                    </div>
                 </div>
-                <div>
-                    <h1 style={{
-                        fontSize: '18px',
-                        fontWeight: '700',
-                        background: 'linear-gradient(135deg, var(--primary-light), var(--secondary))',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                    }}>
-                        Менторство
-                    </h1>
-                    <p style={{
-                        fontSize: '12px',
-                        color: 'var(--text-muted)',
-                    }}>
-                        Панель управления
-                    </p>
+                
+                {/* Theme & Language Toggles */}
+                <div style={{
+                    display: 'flex',
+                    gap: '8px',
+                    padding: '0 12px',
+                    marginBottom: '16px',
+                }}>
+                    <ThemeToggle />
+                    <LocaleToggle />
                 </div>
             </div>
 
@@ -80,7 +90,13 @@ export default function Navigation() {
                 gap: '8px',
                 flex: 1,
             }}>
-                {navItems.map((item) => {
+                {[
+                    { href: '/', label: t.nav.dashboard, icon: LayoutDashboard },
+                    { href: '/calendar', label: t.nav.calendar, icon: Calendar },
+                    { href: '/students', label: t.nav.students, icon: Users },
+                    { href: '/payments', label: t.nav.payments, icon: Wallet },
+                    { href: '/analytics', label: t.nav.analytics, icon: TrendingUp },
+                ].map((item) => {
                     const Icon = item.icon;
                     const isActive = pathname === item.href;
 
@@ -121,16 +137,6 @@ export default function Navigation() {
                 })}
             </div>
 
-            {/* Footer */}
-            <div style={{
-                padding: '16px',
-                borderTop: '1px solid var(--border)',
-                fontSize: '12px',
-                color: 'var(--text-muted)',
-                textAlign: 'center',
-            }}>
-                © 2026 Dashboard
-            </div>
         </nav>
     );
 }

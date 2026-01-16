@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getStatistics, lessonsDB } from '@/lib/db';
+// Removed old db imports - using API instead
 import type { FinancialStats, Lesson } from '@/lib/types';
 import { LessonStatus } from '@/lib/types';
 
@@ -17,27 +17,44 @@ export function useStatistics(): UseStatisticsResult {
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
     useEffect(() => {
-        // выполняется только на клиенте
-        const statistics = getStatistics();
-        setStats(statistics);
+        // Fetch statistics and lessons from API
+        const fetchData = async () => {
+            try {
+                const [statsRes, lessonsRes] = await Promise.all([
+                    fetch('/api/statistics'),
+                    fetch('/api/lessons'),
+                ]);
 
-        const allLessons = lessonsDB.getAll();
-        const now = new Date();
-        const upcoming = allLessons
-            .filter(
-                lesson =>
-                    lesson.status === LessonStatus.Scheduled &&
-                    new Date(lesson.startTime) > now,
-            )
-            .sort(
-                (a, b) =>
-                    new Date(a.startTime).getTime() -
-                    new Date(b.startTime).getTime(),
-            )
-            .slice(0, 5);
+                if (statsRes.ok) {
+                    const statsData = await statsRes.json();
+                    setStats(statsData);
+                }
 
-        setUpcomingLessons(upcoming);
-        setIsLoading(false);
+                if (lessonsRes.ok) {
+                    const allLessons = await lessonsRes.json();
+                    const now = new Date();
+                    const upcoming = allLessons
+                        .filter(
+                            (lesson: Lesson) =>
+                                lesson.status === LessonStatus.Pending &&
+                                new Date(lesson.startTime) > now,
+                        )
+                        .sort(
+                            (a: Lesson, b: Lesson) =>
+                                new Date(a.startTime).getTime() -
+                                new Date(b.startTime).getTime(),
+                        )
+                        .slice(0, 5);
+                    setUpcomingLessons(upcoming);
+                }
+            } catch (error) {
+                console.error('Failed to fetch statistics:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchData();
     }, []);
 
     return { stats, upcomingLessons, isLoading };

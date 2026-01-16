@@ -1,0 +1,69 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  name          String?
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Student {
+  id         String   @id @default(cuid())
+  name       String
+  email      String?  @unique
+  phone      String?
+  githubLink String?
+  createdAt  DateTime @default(now())
+  
+  lessons       Lesson[]
+  monthlyPlans  MonthlyPlan[]
+}
+
+model Lesson {
+  id           String   @id @default(cuid())
+  studentId    String
+  startTime    DateTime
+  endTime      DateTime
+  durationHours Float
+  status       String   @default("pending") // pending, done, cancelled
+  notes        String?
+  createdAt    DateTime @default(now())
+  
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  @@index([startTime, endTime])
+  @@index([studentId])
+  @@index([status])
+}
+
+model MonthlyPlan {
+  id           String   @id @default(cuid())
+  studentId    String
+  month        String // "2025-01"
+  totalLessons Int
+  usedLessons  Int      @default(0)
+  priceTotal   Int
+  isPaid       Boolean  @default(false)
+  paidAmount   Int      @default(0)
+  createdAt    DateTime @default(now())
+  
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  @@unique([studentId, month])
+  @@index([month])
+  @@index([studentId])
+  @@index([isPaid])
+}
