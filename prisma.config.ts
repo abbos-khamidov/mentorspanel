@@ -2,12 +2,14 @@ import { defineConfig } from "prisma/config";
 import { config } from "dotenv";
 import { resolve } from "path";
 
-// Load .env.local file synchronously
+// Try to load .env.local file if it exists (for local development)
+// On Vercel, environment variables are already available
 const envPath = resolve(process.cwd(), ".env.local");
 const result = config({ path: envPath });
 
-if (result.error) {
-  throw new Error(`Failed to load .env.local: ${result.error.message}`);
+// Only warn if file doesn't exist, don't throw error (for production/Vercel)
+if (result.error && process.env.NODE_ENV === "development") {
+  console.warn(`Warning: Could not load .env.local: ${result.error.message}`);
 }
 
 // Get DATABASE_URL from environment
@@ -21,7 +23,7 @@ if (!databaseUrl) {
   );
 }
 
-console.log("Loaded DATABASE_URL from .env.local");
+console.log("Loaded DATABASE_URL from environment");
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
