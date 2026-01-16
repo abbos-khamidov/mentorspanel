@@ -2,6 +2,8 @@ import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { updateLesson, deleteLesson } from '@/app/actions/lessons';
 
+export const dynamic = 'force-dynamic';
+
 export async function PUT(
   request: Request,
   { params }: { params: { id: string } }

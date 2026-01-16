@@ -2,6 +2,8 @@ import { db } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { createLesson } from '@/app/actions/lessons';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const lessons = await db.lesson.findMany({
