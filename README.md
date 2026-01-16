@@ -89,9 +89,15 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
    - Import your GitHub repository
 
 3. **Add PostgreSQL Database**
-   - In Vercel dashboard, go to Storage
-   - Create a Postgres database
-   - Copy the connection string
+   - **Важно:** Vercel больше не предоставляет встроенный Postgres
+   - Используйте провайдера из Marketplace:
+     - **Neon** (рекомендуется) - бесплатно, serverless Postgres
+     - **Supabase** - бесплатно, Postgres + дополнительные функции
+     - **Prisma Postgres** - instant serverless Postgres
+   - В Vercel Dashboard → Storage → Create Database
+   - Выберите провайдера и следуйте инструкциям
+   - Скопируйте Connection String
+   - **См. подробности:** `DATABASE_SETUP.md`
 
 4. **Configure Environment Variables**
    - In project settings, add `DATABASE_URL`

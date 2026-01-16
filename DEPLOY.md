@@ -65,9 +65,12 @@ vercel link
 npx prisma migrate deploy
 ```
 
-**Вариант 2: Через SQL напрямую**
-1. Откройте Vercel Postgres → **Data** → **SQL Editor**
-2. Выполните SQL из файлов миграций:
+**Вариант 2: Через SQL Editor провайдера**
+1. Откройте SQL Editor вашего провайдера:
+   - **Neon:** https://console.neon.tech → ваш проект → SQL Editor
+   - **Supabase:** https://supabase.com/dashboard → ваш проект → SQL Editor
+   - **Другие:** используйте их встроенный SQL Editor
+2. Выполните SQL из файлов миграций (или используйте `DEPLOY_SQL.sql`):
    - `prisma/migrations/20260116110039_init/migration.sql`
    - `prisma/migrations/20260116122117_add_user_auth/migration.sql`
    - `prisma/migrations/20250116130000_add_github_link/migration.sql`
