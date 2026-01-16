@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import AuthForm from './AuthForm';
 import ParticleBackground from './ParticleBackground';
@@ -90,16 +90,22 @@ export default function AuthPage() {
             flexDirection: 'column',
           }}
         >
-          <AuthForm
-            isLogin={isLogin}
-            setIsLogin={setIsLogin}
-            onError={() => setIsError(true)}
-            onSuccess={() => {
-              setIsError(false);
-              // Reset error state after delay
-              setTimeout(() => setIsError(false), 2000);
-            }}
-          />
+          <Suspense fallback={
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', padding: '40px' }}>
+              <div style={{ textAlign: 'center', color: '#666' }}>Загрузка...</div>
+            </div>
+          }>
+            <AuthForm
+              isLogin={isLogin}
+              setIsLogin={setIsLogin}
+              onError={() => setIsError(true)}
+              onSuccess={() => {
+                setIsError(false);
+                // Reset error state after delay
+                setTimeout(() => setIsError(false), 2000);
+              }}
+            />
+          </Suspense>
         </div>
       </div>
     </div>
