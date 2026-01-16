@@ -11,12 +11,13 @@ if (result.error) {
 }
 
 // Get DATABASE_URL from environment
-const databaseUrl = process.env.DATABASE_URL || process.env["DATABASE_URL"];
+// Note: Prisma Postgres creates DATABBASE_URL (with double B) automatically
+const databaseUrl = process.env.DATABBASE_URL || process.env.DATABASE_URL || process.env["DATABBASE_URL"] || process.env["DATABASE_URL"];
 
 if (!databaseUrl) {
   console.error("Available env vars:", Object.keys(process.env).filter(k => k.includes("DATABASE")));
   throw new Error(
-    `DATABASE_URL environment variable is not set. Please add it to your .env.local file.`
+    `DATABASE_URL or DATABBASE_URL environment variable is not set. Please add it to your .env.local file or Vercel Environment Variables.`
   );
 }
 
