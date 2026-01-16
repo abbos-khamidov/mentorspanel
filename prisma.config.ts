@@ -1,15 +1,18 @@
 import { defineConfig } from "prisma/config";
 import { config } from "dotenv";
 import { resolve } from "path";
+import { existsSync } from "fs";
 
 // Try to load .env.local file if it exists (for local development)
 // On Vercel, environment variables are already available
 const envPath = resolve(process.cwd(), ".env.local");
-const result = config({ path: envPath });
 
-// Only warn if file doesn't exist, don't throw error (for production/Vercel)
-if (result.error && process.env.NODE_ENV === "development") {
-  console.warn(`Warning: Could not load .env.local: ${result.error.message}`);
+// Only try to load .env.local if file exists
+if (existsSync(envPath)) {
+  const result = config({ path: envPath });
+  if (result.error && process.env.NODE_ENV === "development") {
+    console.warn(`Warning: Could not load .env.local: ${result.error.message}`);
+  }
 }
 
 // Get DATABASE_URL from environment
