@@ -13,12 +13,14 @@ if (!connectionString) {
   process.exit(1);
 }
 
-// Configure SSL for Railway Public Network connections
+// Configure SSL for Railway connections
 const poolConfig = { 
   connectionString,
-  // Railway Public Network requires SSL
-  ssl: connectionString.includes('.rlwy.net') || connectionString.includes('.railway.app') 
+  // Railway Public Network requires SSL, internal network doesn't
+  ssl: connectionString.includes('.rlwy.net') || connectionString.includes('.railway.app')
     ? { rejectUnauthorized: false } 
+    : connectionString.includes('postgres.railway.internal')
+    ? false // Internal Railway network doesn't need SSL
     : false,
 };
 
