@@ -77,8 +77,33 @@ export async function POST(request: Request) {
         name: user.name,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Login error:', error);
+    console.error('Error details:', {
+      message: error?.message,
+      code: error?.code,
+      name: error?.name,
+      stack: error?.stack,
+    });
+
+    // Проверка на отсутствие таблицы (миграции не применены)
+    if (error?.code === '42P01' || error?.message?.includes('does not exist') || error?.message?.includes('relation') && error?.message?.includes('users')) {
+      console.error('❌ Table "users" does not exist! Migrations may not be applied.');
+      return NextResponse.json(
+        { error: 'Ошибка базы данных. Миграции не применены.' },
+        { status: 500 }
+      );
+    }
+
+    // Проверка на ошибку подключения
+    if (error?.code === 'ECONNREFUSED' || error?.message?.includes('connect') || error?.message?.includes('connection')) {
+      console.error('❌ Database connection error!');
+      return NextResponse.json(
+        { error: 'Ошибка подключения к базе данных.' },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json(
       { error: 'Ошибка при входе. Попробуйте снова.' },
       { status: 500 }

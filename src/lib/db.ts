@@ -8,20 +8,40 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 // Prisma 7 requires a driver adapter for PostgreSQL
-// Note: Prisma Postgres creates DATABBASE_POSTGRES_URL automatically
+// Note: Railway PostgreSQL creates DATABASE_URL automatically
 const connectionString = 
-  process.env.DATABBASE_URL || 
+  process.env.DATABASE_URL || 
   process.env.DATABBASE_POSTGRES_URL ||
-  process.env.DATABASE_URL;
+  process.env.DATABBASE_URL;
 
 if (!connectionString) {
-  throw new Error(
-    'DATABASE_URL or DATABBASE_URL environment variable is not set. Please add it to your .env.local file or Vercel Environment Variables.'
-  );
+  const errorMessage = `
+❌ DATABASE_URL environment variable is not set!
+
+Available environment variables containing 'DATABASE':
+${Object.keys(process.env).filter(k => k.includes('DATABASE')).map(k => `  - ${k}`).join('\n') || '  (none found)'}
+
+Please ensure:
+1. PostgreSQL service is added to your Railway project
+2. DATABASE_URL is available in your Railway service environment variables
+3. Services are properly linked in Railway project settings
+`;
+  console.error(errorMessage);
+  throw new Error('DATABASE_URL environment variable is not set');
 }
 
-// Create a pg Pool
-const pool = new Pool({ connectionString });
+// Create a pg Pool with connection settings
+const pool = new Pool({ 
+  connectionString,
+  // Railway internal connections work without SSL
+  ssl: connectionString.includes('.railway.app') ? { rejectUnauthorized: false } : false,
+});
+
+// Add error handling for pool
+pool.on('error', (err) => {
+  console.error('❌ Unexpected error on idle PostgreSQL client:', err);
+});
+
 const adapter = new PrismaPg(pool);
 
 export const db =

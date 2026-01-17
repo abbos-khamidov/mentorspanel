@@ -57,12 +57,36 @@ export async function POST(request: Request) {
     });
   } catch (error: any) {
     console.error('Registration error:', error);
+    console.error('Error details:', {
+      message: error?.message,
+      code: error?.code,
+      name: error?.name,
+      stack: error?.stack,
+    });
     
     // Проверка на дубликат
-    if (error?.code === '23505' || error?.message?.includes('unique')) {
+    if (error?.code === '23505' || error?.message?.includes('unique') || error?.message?.includes('duplicate')) {
       return NextResponse.json(
         { error: 'Пользователь с таким email уже существует' },
         { status: 400 }
+      );
+    }
+
+    // Проверка на отсутствие таблицы (миграции не применены)
+    if (error?.code === '42P01' || error?.message?.includes('does not exist') || error?.message?.includes('relation') && error?.message?.includes('users')) {
+      console.error('❌ Table "users" does not exist! Migrations may not be applied.');
+      return NextResponse.json(
+        { error: 'Ошибка базы данных. Миграции не применены.' },
+        { status: 500 }
+      );
+    }
+
+    // Проверка на ошибку подключения
+    if (error?.code === 'ECONNREFUSED' || error?.message?.includes('connect') || error?.message?.includes('connection')) {
+      console.error('❌ Database connection error!');
+      return NextResponse.json(
+        { error: 'Ошибка подключения к базе данных.' },
+        { status: 500 }
       );
     }
 

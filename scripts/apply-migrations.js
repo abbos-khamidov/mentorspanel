@@ -13,7 +13,16 @@ if (!connectionString) {
   process.exit(1);
 }
 
-const pool = new Pool({ connectionString });
+// Configure SSL for Railway Public Network connections
+const poolConfig = { 
+  connectionString,
+  // Railway Public Network requires SSL
+  ssl: connectionString.includes('.rlwy.net') || connectionString.includes('.railway.app') 
+    ? { rejectUnauthorized: false } 
+    : false,
+};
+
+const pool = new Pool(poolConfig);
 
 async function applyMigrations() {
   const client = await pool.connect();

@@ -9,6 +9,7 @@ Production-ready Next.js 14 mentorship platform with PostgreSQL integration.
 - **📅 Calendar** - Schedule lessons with automatic conflict detection
 - **💰 Payment Tracking** - Monthly subscription plans and payment management
 - **📈 Analytics** - Income trends, lesson statistics, and student performance charts
+- **🔐 Authentication** - Secure user authentication system
 
 ## 🚀 Tech Stack
 
@@ -17,9 +18,8 @@ Production-ready Next.js 14 mentorship platform with PostgreSQL integration.
 - **Database:** PostgreSQL
 - **ORM:** Prisma
 - **Data Fetching:** Server Actions + Route Handlers
-- **Styling:** Tailwind CSS + Custom CSS Variables
+- **Styling:** Custom CSS + Framer Motion
 - **Charts:** Recharts
-- **Deployment:** Vercel-ready
 
 ## 📋 Prerequisites
 
@@ -27,7 +27,7 @@ Production-ready Next.js 14 mentorship platform with PostgreSQL integration.
 - PostgreSQL database (local or cloud)
 - npm or yarn
 
-## 🛠️ Setup Instructions
+## 🛠️ Local Setup
 
 ### 1. Install Dependencies
 
@@ -41,11 +41,6 @@ Create a `.env.local` file in the root directory:
 
 ```env
 DATABASE_URL="postgresql://user:password@localhost:5432/mentorship_db?schema=public"
-```
-
-**For Vercel Postgres:**
-```env
-DATABASE_URL="postgres://default:password@ep-xxx.us-east-1.postgres.vercel-storage.com:5432/verceldb"
 ```
 
 ### 3. Database Setup
@@ -74,67 +69,92 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## 🌐 Deployment on Vercel
+## 🌐 Deployment on Railway
 
-1. **Push code to GitHub**
-   ```bash
-   git add .
-   git commit -m "Initial commit"
-   git push origin main
-   ```
+Railway automatically detects Next.js projects and configures the build process.
 
-2. **Create Vercel Project**
-   - Go to [vercel.com](https://vercel.com)
-   - Click "New Project"
-   - Import your GitHub repository
+### Step 1: Create Railway Project
 
-3. **Add PostgreSQL Database**
-   - **Важно:** Vercel больше не предоставляет встроенный Postgres
-   - Используйте провайдера из Marketplace:
-     - **Neon** (рекомендуется) - бесплатно, serverless Postgres
-     - **Supabase** - бесплатно, Postgres + дополнительные функции
-     - **Prisma Postgres** - instant serverless Postgres
-   - В Vercel Dashboard → Storage → Create Database
-   - Выберите провайдера и следуйте инструкциям
-   - Скопируйте Connection String
-   - **См. подробности:** `DATABASE_SETUP.md`
+1. Go to [railway.app](https://railway.app)
+2. Click "New Project"
+3. Select "Deploy from GitHub repo"
+4. Connect your GitHub account and select this repository
 
-4. **Configure Environment Variables**
-   - In project settings, add `DATABASE_URL`
-   - Paste your PostgreSQL connection string
+### Step 2: Add PostgreSQL Database
 
-5. **Deploy**
-   - Vercel will automatically detect Next.js
-   - It will run `prisma generate` and migrations during build
-   - Your app will be live!
+1. In your Railway project, click "+ New"
+2. Select "Database" → "Add PostgreSQL"
+3. Railway will automatically create a PostgreSQL database
+4. Railway automatically provides `DATABASE_URL` environment variable
+
+### Step 3: Apply Database Migrations
+
+After the first deployment, run migrations:
+
+**Option A: Via Railway CLI (Recommended)**
+
+```bash
+# Install Railway CLI
+npm i -g @railway/cli
+
+# Login to Railway
+railway login
+
+# Link to your project
+railway link
+
+# Apply migrations
+railway run npx prisma migrate deploy
+```
+
+**Option B: Via Railway Dashboard**
+
+1. Go to your project on Railway
+2. Click on your PostgreSQL service
+3. Open "Query" tab
+4. Copy and execute SQL from migration files:
+   - `prisma/migrations/20260116110039_init/migration.sql`
+   - `prisma/migrations/20260116122117_add_user_auth/migration.sql`
+   - `prisma/migrations/20250116130000_add_github_link/migration.sql`
+
+### Step 4: Deploy
+
+Railway will automatically:
+- Install dependencies (`npm install`)
+- Run `prisma generate` (via postinstall script)
+- Build the application (`npm run build`)
+- Start the application (`npm start`)
+
+Your app will be live at the Railway-generated URL!
+
+## 🔧 Build Configuration
+
+Railway automatically detects:
+- **Build Command:** `npm run build` (which includes `prisma generate && next build`)
+- **Start Command:** `npm start`
+- **Node Version:** Detected from `package.json` or `.nvmrc`
 
 ## 📁 Project Structure
 
 ```
 dashboard-of-lessons/
 ├── prisma/
-│   └── schema.prisma          # Database schema
+│   ├── schema.prisma          # Database schema
+│   └── migrations/            # Database migrations
 ├── src/
 │   ├── app/
 │   │   ├── actions/           # Server actions
-│   │   │   ├── students.ts
-│   │   │   ├── lessons.ts
-│   │   │   ├── payments.ts
-│   │   │   └── analytics.ts
 │   │   ├── api/               # API routes
+│   │   ├── auth/              # Authentication pages
 │   │   ├── analytics/         # Analytics page
 │   │   ├── calendar/          # Calendar page
 │   │   ├── payments/          # Payments page
-│   │   ├── students/          # Students page
-│   │   └── page.tsx           # Dashboard
+│   │   └── students/          # Students page
 │   ├── components/            # React components
-│   ├── lib/
-│   │   ├── db.ts              # Prisma client
-│   │   ├── types.ts           # TypeScript types
-│   │   ├── validations.ts     # Zod schemas
-│   │   └── utils.ts           # Utility functions
+│   ├── lib/                   # Utility functions
 │   └── hooks/                 # React hooks
 ├── package.json
+├── prisma.config.ts           # Prisma configuration
 └── README.md
 ```
 
@@ -193,6 +213,26 @@ Visual database browser:
 ```bash
 npx prisma studio
 ```
+
+## 🐛 Troubleshooting
+
+### Build fails on Railway
+
+- Make sure `DATABASE_URL` is set (Railway provides it automatically for PostgreSQL services)
+- Check build logs in Railway dashboard
+- Verify `npm run build` works locally
+
+### Database connection errors
+
+- Ensure PostgreSQL service is running in Railway
+- Check that `DATABASE_URL` environment variable is correct
+- Verify migrations are applied: `railway run npx prisma migrate deploy`
+
+### Prisma Client not generated
+
+- Railway runs `prisma generate` automatically via `postinstall` script
+- Check build logs for Prisma generation errors
+- Ensure `prisma.config.ts` is properly configured
 
 ## 📝 License
 

@@ -25,16 +25,13 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
-# .env*.local
-# .env
-
-# vercel
-.vercel
+.env*.local
+.env
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
 
 # prisma
-prisma/migrations
+# prisma/migrations - keep migrations for deployment
 src/generated
