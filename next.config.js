@@ -3,7 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   // Disable static generation for dynamic pages
-  output: 'standalone',
+  // output: 'standalone', // Removed - causes warning with next start
   webpack: (config, { isServer }) => {
     // Exclude pg and related modules from client bundle
     if (!isServer) {
